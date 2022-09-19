@@ -7,8 +7,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/kbsonlong/wolf/internal/service"
+	"github.com/kbsonlong/wolf/internal/router"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // serverCmd represents the server command
@@ -22,7 +23,8 @@ var serverCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		service.Start()
+		r := router.InitRouter()
+		r.Run(fmt.Sprintf(":%d", viper.Get("PORT")))
 	},
 }
 

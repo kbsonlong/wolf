@@ -6,17 +6,13 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	ecs20140526 "github.com/alibabacloud-go/ecs-20140526/v2/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/gin-gonic/gin"
+	"github.com/kbsonlong/wolf/internal/cmdb/aliyun"
 	"github.com/kbsonlong/wolf/internal/monitor"
-	"github.com/spf13/viper"
 )
-
-func Start() {
-	r := gin.Default()
-	r.GET("/", Ping)
-	r.POST("/api/v1/events", SpotEvent)
-	r.Run(fmt.Sprintf(":%d", viper.Get("PORT")))
-}
 
 // ref: https://swaggo.github.io/swaggo.io/declarative_comments_format/api_operation.html
 // @Summary Show an accounts
@@ -48,5 +44,26 @@ func SpotEvent(c *gin.Context) {
 	if err := json.Unmarshal(BodyAsArray, &requestBody); err != nil {
 		fmt.Println(err)
 	}
-	c.JSON(http.StatusOK, &requestBody)
+	results := GetInstance()
+	fmt.Println(requestBody.Content.InstanceID)
+	for _, instance := range results.Body.Instances.Instance {
+		fmt.Println(instance.HostName)
+	}
+	// fmt.Println(results.Body.Instances)
+	c.JSON(http.StatusOK, results.Body.Instances)
+}
+
+func GetInstance() *ecs20140526.DescribeInstancesResponse {
+	client, _err := aliyun.CreateClient(tea.String("LTAI5tB7P844wg5Ks3AE5xQe"), tea.String("P2ao5wPJYQk2sDknjPfqGiNZZmx7Ts"))
+	if _err != nil {
+		fmt.Println(_err)
+	}
+
+	describeInstancesRequest := &ecs20140526.DescribeInstancesRequest{
+		RegionId: tea.String("cn-shenzhen"),
+	}
+	runtime := &util.RuntimeOptions{}
+	results, _err := client.DescribeInstancesWithOptions(describeInstancesRequest, runtime)
+	fmt.Println(results.Body.Instances.Instance[0].InstanceId)
+	return results
 }
