@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kbsonlong/wolf/internal/cmdb/aliyun"
 	"github.com/kbsonlong/wolf/internal/monitor"
+	"github.com/spf13/viper"
 )
 
 // ref: https://swaggo.github.io/swaggo.io/declarative_comments_format/api_operation.html
@@ -25,6 +26,10 @@ import (
 // @Failure 400 {object} model.HTTPError
 // @Router /accounts/{id} [get]
 func Ping(c *gin.Context) {
+	results := GetInstance()
+	for _, instance := range results.Body.Instances.Instance {
+		fmt.Println(instance.HostName)
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "Ping successful"})
 }
 
@@ -45,16 +50,18 @@ func SpotEvent(c *gin.Context) {
 		fmt.Println(err)
 	}
 	results := GetInstance()
-	fmt.Println(requestBody.Content.InstanceID)
-	for _, instance := range results.Body.Instances.Instance {
-		fmt.Println(instance.HostName)
+	fmt.Println(results.Body.Instances)
+	for instance := range results.Body.Instances.Instance {
+		fmt.Println(instance)
 	}
 	// fmt.Println(results.Body.Instances)
 	c.JSON(http.StatusOK, results.Body.Instances)
 }
 
 func GetInstance() *ecs20140526.DescribeInstancesResponse {
-	client, _err := aliyun.CreateClient(tea.String("LTAI5tB7P844wg5Ks3AE5xQe"), tea.String("P2ao5wPJYQk2sDknjPfqGiNZZmx7Ts"))
+	ak := viper.Get("ACCESS_KEY")
+	sk := viper.Get("SECRET_KEY")
+	client, _err := aliyun.CreateClient(tea.String(fmt.Sprintf("%v", ak)), tea.String(fmt.Sprintf("%v", sk)))
 	if _err != nil {
 		fmt.Println(_err)
 	}
@@ -64,6 +71,11 @@ func GetInstance() *ecs20140526.DescribeInstancesResponse {
 	}
 	runtime := &util.RuntimeOptions{}
 	results, _err := client.DescribeInstancesWithOptions(describeInstancesRequest, runtime)
-	fmt.Println(results.Body.Instances.Instance[0].InstanceId)
+
+	fmt.Println(results.Body.Instances.Instance)
+	for index, value := range results.Body.Instances.Instance {
+		fmt.Printf("%d\n", index)
+		fmt.Printf("%+v\n", value.InstanceId)
+	}
 	return results
 }
